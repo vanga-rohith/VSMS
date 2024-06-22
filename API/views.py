@@ -1,17 +1,23 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from .serializer import UserCreateSerializer
 from rest_framework.status import HTTP_200_OK,HTTP_201_CREATED,HTTP_400_BAD_REQUEST
-from django.contrib.auth import user_logged_out
+from django.contrib.auth import authenticate,login,logout
+from rest_framework.response import Response
+from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
+from .serializer import UserCreateSerializer
 
-@api_view(['POST'])
+@api_view(['POST','GET'])
 def createuser(request):
-    UserObject = UserCreateSerializer(data=request.data)
-    if UserObject.is_valid():
-        UserObject.create_user(request.data['data'])
+    if request.data :
+        data  = request.data
+        UserObj = User.objects.create_user(username=data['user_name'],first_name=data['first_name'],last_name=data['last_name'],email=data['email'],is_staff=data['is_staff'])
+        UserObj.set_password(data['password'])
+        UserObj.save()
+        uObj = User.objects.get(username=data['user_name'])
+        token = Token.objects.create(user=uObj)
+        token.save()
         return Response( status=HTTP_201_CREATED)
     return Response(status=HTTP_400_BAD_REQUEST)
 
-@api_view(["GET"])
-def logout_view(request):
-    user_logged_out(request)
+    
